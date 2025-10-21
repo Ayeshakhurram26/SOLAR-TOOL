@@ -1,8 +1,9 @@
 streamlit
-langchain==0.2.14
-langchain-core==0.2.38
-langchain-openai==0.1.23
-openai==1.35.13
+langchain
+langchain-core
+langchain-community
+langchain-openai
+openai
 faiss-cpu
 python-docx
 pdfplumber
