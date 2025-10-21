@@ -1,11 +1,12 @@
 streamlit
-langchain
-langchain-core
-langchain-community
-langchain-openai
-openai
+langchain==0.2.14
+langchain-core==0.2.38
+langchain-community==0.2.12
+langchain-openai==0.1.23
+openai==1.35.13
 faiss-cpu
 python-docx
 pdfplumber
 docx2txt
 tiktoken
+pandas
