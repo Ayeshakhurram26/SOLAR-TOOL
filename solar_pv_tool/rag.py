@@ -1,29 +1,34 @@
+import pdfplumber
+import docx2txt
+from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import PyPDFLoader, Docx2txtLoader
 from langchain.chains import RetrievalQA
-from langchain.llms import OpenAI
+from langchain_openai import ChatOpenAI
+from langchain.schema import Document
 
-def load_documents(file_paths):
-    docs = []
-    for path in file_paths:
-        if path.endswith(".pdf"):
-            docs.extend(PyPDFLoader(path).load())
-        elif path.endswith(".docx"):
-            docs.extend(Docx2txtLoader(path).load())
-    return docs
+def load_documents(uploaded_files):
+    documents = []
+    for uploaded_file in uploaded_files:
+        if uploaded_file.name.endswith(".pdf"):
+            with pdfplumber.open(uploaded_file) as pdf:
+                text = "\n".join([page.extract_text() or "" for page in pdf.pages])
+        elif uploaded_file.name.endswith(".docx"):
+            text = docx2txt.process(uploaded_file)
+        elif uploaded_file.name.endswith(".txt"):
+            text = uploaded_file.read().decode("utf-8")
+        else:
+            text = ""
+        documents.append(Document(page_content=text))
+    return documents
 
-def create_vector_store(docs):
+def create_vector_store(documents):
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    texts = splitter.split_documents(docs)
+    split_docs = splitter.split_documents(documents)
     embeddings = OpenAIEmbeddings()
-    db = FAISS.from_documents(texts, embeddings)
-    return db
+    return FAISS.from_documents(split_docs, embeddings)
 
-def create_rag_chain(db):
-    retriever = db.as_retriever(search_kwargs={"k": 3})
-    llm = OpenAI(temperature=0)
-    qa = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-    return qa
-
+def create_rag_chain(vector_store):
+    retriever = vector_store.as_retriever()
+    llm = ChatOpenAI(model="gpt-4o-mini")
+    return RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
